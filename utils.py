@@ -88,5 +88,7 @@ class Utils:
 
     @staticmethod
     def get_output_dir():
-        dir = os.path.dirname(__file__)
-        return os.path.join(dir, "data")
+        dir = os.path.join(os.path.dirname(__file__), "data")
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        return dir
