@@ -83,10 +83,10 @@ class Utils:
         return pd.DataFrame.from_dict(dict)
 
     @staticmethod
-    def save_xlsx(df, path):
-        df.to_csv(path, index=False)
+    def save_csv(df, path):
+        df.to_csv(os.path.join(path, "data.csv"), index=False)
 
     @staticmethod
     def get_output_dir():
         dir = os.path.dirname(__file__)
-        return os.path.join(dir, "output")
+        return os.path.join(dir, "data")
