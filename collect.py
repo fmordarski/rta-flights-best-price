@@ -21,5 +21,4 @@ output_folder = Utils.get_output_dir()
 api = Skyscanner(base_url, args.apikey, locale, country, currency,
                  args.countries, args.months)
 data = api.process()
-data = Utils.convert_to_pandas(data)
-Utils.save_csv(data, output_folder)
+Utils.save_json(data, output_folder)

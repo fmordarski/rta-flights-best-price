@@ -2,8 +2,8 @@ import requests
 from datetime import datetime
 import calendar
 from itertools import combinations, product
-import pandas as pd
 import os
+import json
 
 
 class Skyscanner:
@@ -19,6 +19,7 @@ class Skyscanner:
         self.months = months
         self.days = []
         self.locations = []
+        self.mapping = {}
         self.quotes = self._quote_dict()
 
     def process(self):
@@ -26,10 +27,12 @@ class Skyscanner:
         self.get_combinations()
         self.get_dates()
         self.get_all_quotes()
+        self.map_locations()
         return self.quotes
 
     def _quote_dict(self):
-        return {"Origin": [], "Destination": [], "Price": [], "Date": []}
+        return {"Origin": [], "Destination": [], "Price": [], "Date": [],
+                "Carrier": []}
 
     def get_locations(self):
         url = f"{self.base_url}/autosuggest/v1.0/{self.country}/" + \
@@ -40,6 +43,7 @@ class Skyscanner:
             r = requests.get(url, params=params)
             for place in r.json()["Places"]:
                 self.locations.append(place["PlaceId"])
+                self.mapping[place["PlaceId"]] = place["PlaceName"]
 
     def get_combinations(self):
         self.locations_pairs = [comb for comb in combinations(self.locations,
@@ -55,36 +59,41 @@ class Skyscanner:
 
     def get_all_quotes(self):
         for pair, day in product(self.locations_pairs, self.days):
-            quotes = self.get_quote(pair[0], pair[1], day)
+            print(pair, day)
+            quotes, carrier = self.get_quote(pair[0], pair[1], day)
             for quote in quotes:
-                self.append_quote(pair[0], pair[1], day, quote)
-            quotes = self.get_quote(pair[1], pair[0], day)
+                self.append_quote(pair[0], pair[1], day, quote, carrier)
+            quotes, carrier = self.get_quote(pair[1], pair[0], day)
             for quote in quotes:
-                self.append_quote(pair[1], pair[0], day, quote)
+                self.append_quote(pair[1], pair[0], day, quote, carrier)
 
-    def append_quote(self, origin, dest, date, quote):
+    def map_locations(self):
+        self.quotes["Origin"] = [self.mapping[place] for place in
+                                 self.quotes["Origin"]]
+        self.quotes["Destination"] = [self.mapping[place] for place in
+                                      self.quotes["Destination"]]
+
+    def append_quote(self, origin, dest, date, quote, carrier):
         self.quotes["Origin"].append(origin)
         self.quotes["Destination"].append(dest)
         self.quotes["Price"].append(quote["MinPrice"])
+        self.quotes["Carrier"].append(carrier[0]["Name"] if "Name" in
+                                      carrier[0] else "")
         self.quotes["Date"].append(date)
 
     def get_quote(self, origin, dest, day):
+        quote, carrier = "", ""
         url = f"{self.base_url}/browsequotes/v1.0/{self.country}/" + \
               f"{self.currency}/{self.locale}/{origin}/{dest}/{day}/"
         params = {"apiKey": self.apikey}
         r = requests.get(url, params=params)
-        return r.json()["Quotes"]
+        if r.json():
+            quote = r.json()["Quotes"] if "Quotes" in r.json() else ""
+            carrier = r.json()["Carriers"] if "Carriers" in r.json() else ""
+        return quote, carrier
 
 
 class Utils:
-
-    @staticmethod
-    def convert_to_pandas(dict):
-        return pd.DataFrame.from_dict(dict)
-
-    @staticmethod
-    def save_csv(df, path):
-        df.to_csv(os.path.join(path, "data.csv"), index=False)
 
     @staticmethod
     def get_output_dir():
@@ -92,3 +101,8 @@ class Utils:
         if not os.path.exists(dir):
             os.makedirs(dir)
         return dir
+
+    @staticmethod
+    def save_json(data, path):
+        with open(os.path.join(path, "data.json"), 'w') as f:
+            json.dump(data, f)
