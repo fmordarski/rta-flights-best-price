@@ -1,0 +1,6 @@
+Ja instalowałem sparka na podstawie strony: https://analyticshut.com/how-to-install-spark-on-windows/
+Wersje programów, które mam u siebie: 
+Java: 1.8.0_291
+Spark: 3.1.1 z Hadoopem 3.2.0
+Winutils: do Hadoopa 3.2.0: https://github.com/cdarlint/winutils/blob/master/hadoop-3.2.0/bin/winutils.exe
+Python: 3.5 
